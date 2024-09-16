@@ -44,7 +44,7 @@ auto Tokenizer::scanToken() -> void {
             break;
         case ':':
             makeToken(match('=') 
-                        ? TokenType::Semicolon
+                        ? TokenType::Assign
                         : TokenType::UnexpectedCharacter);
             break;
         case '?':

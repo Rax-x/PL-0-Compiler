@@ -1,10 +1,13 @@
+#include <cassert>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <ostream>
 
+#include "ast.hpp"
 #include "token.hpp"
 #include "tokenizer.hpp"
+#include "parser.hpp"
 
 /*
 
@@ -17,7 +20,6 @@ program = block "." ;
 block = [ "const" ident "=" number {"," ident "=" number} ";"]
         [ "var" ident {"," ident} ";"]
         { "procedure" ident ";" block ";" } statement ;
-
 statement = [ ident ":=" expression 
               | "call" ident
               | "?" ident | "!" expression
@@ -35,7 +37,8 @@ factor = ident | number | "(" expression ")";
 */
 
 using pl0::tokenizer::Tokenizer;
-using pl0::token::TokenType;
+using pl0::parser::Parser;
+using pl0::ast::AstPrinter;
 
 static auto readFile(const char* path) -> std::string {
     std::ifstream stream(path);
@@ -49,6 +52,7 @@ static auto readFile(const char* path) -> std::string {
     return buffer;
 }
 
+
 auto main(int argc, char** argv) -> int {
 
     if(argc < 2){
@@ -61,15 +65,16 @@ auto main(int argc, char** argv) -> int {
     
     auto tokens = tokenizer.tokenize();
 
-    for(const auto& token : tokens){
-        const auto& [type, lexeme, line] = token;
+    Parser parser(tokens);
+    auto ast = parser.parseProgram();
 
-        if(type == TokenType::UnexpectedCharacter){
-            std::cout << "Unexpected character: '" << lexeme << "' at line " << line << '\n';
-            break;
+    if(parser.hadError()) {
+        for(const auto& error : parser.errors()){
+            std::cout << error << '\n';
         }
-
-        std::cout << "Token: '" << lexeme << "' Ln: " << line << '\n';
+    } else {
+        AstPrinter printer;
+        printer.print(ast);
     }
 
     return 0;
