@@ -8,15 +8,17 @@
 #include <vector>
 #include <format>
 
+#include "errors_holder_trait.hpp"
 #include "token.hpp"
 #include "ast.hpp"
 
 namespace pl0::parser {
 
+using namespace error;
 using namespace token;
 using namespace ast;
 
-class Parser final {
+class Parser final : public ErrorsHolderTrait {
 public:
     explicit Parser(std::vector<Token>& tokens)
         : m_tokens(std::move(tokens)),
@@ -24,14 +26,6 @@ public:
           m_panicMode(false) {}
           
     auto parseProgram() -> StatementPtr;
-
-    constexpr auto hadError() const -> bool {
-        return !m_errors.empty();
-    }
-
-    constexpr auto errors() const -> const std::vector<std::string>& {
-        return m_errors;
-    }
 
 private:
 
@@ -82,7 +76,7 @@ private:
 
     template<typename... Args>
     inline auto error(std::string_view fmt, Args&&... args) -> void {
-        m_errors.emplace_back(std::vformat(fmt, std::make_format_args(args...)));
+        pushError(std::vformat(fmt, std::make_format_args(args...)));
         m_panicMode = true;
     }
 
@@ -91,7 +85,6 @@ private:
     std::uint32_t m_curr;
 
     bool m_panicMode;
-    std::vector<std::string> m_errors;
 };
 
 

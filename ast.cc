@@ -71,7 +71,7 @@ auto AstPrinter::visit(Block* block) -> void {
 
 auto AstPrinter::visit(ConstDeclarations* decl) -> void {
 
-    std::cout << "BeginStatement:";
+    std::cout << "ConstDeclarations:";
     
     indent();
 

@@ -1,5 +1,9 @@
 CXX = g++
-CXXFLAGS := -Wall -Wextra -std=c++20
+
+LLVM_LIB_FLAGS := $(shell llvm-config --ldflags --system-libs --libs core)
+LLVM_CXXFLAGS := $(shell llvm-config --cxxflags)
+CXXFLAGS := -Wall -Wextra $(LLVM_CXXFLAGS) -std=c++20 -Wno-unused-parameter
+
 
 SOURCES := $(wildcard *.cc)
 OBJECTS := $(patsubst %.cc, %.o, $(SOURCES))
@@ -10,11 +14,11 @@ BIN := pl0
 
 all: $(BIN)
 
-debug: CXXFLAGS += -ggdb
+debug: CXXFLAGS += -g
 debug: all
 
 $(BIN): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $^ $(LLVM_LIB_FLAGS) -o $@
 
 %.o: %.cc %.hpp
 	$(CXX) $(CXXFLAGS) -c $<

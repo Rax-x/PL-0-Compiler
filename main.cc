@@ -5,9 +5,9 @@
 #include <ostream>
 
 #include "ast.hpp"
-#include "token.hpp"
 #include "tokenizer.hpp"
 #include "parser.hpp"
+#include "codegen.hpp"
 
 /*
 
@@ -39,6 +39,7 @@ factor = ident | number | "(" expression ")";
 using pl0::tokenizer::Tokenizer;
 using pl0::parser::Parser;
 using pl0::ast::AstPrinter;
+using pl0::codegen::CodeGenerator;
 
 static auto readFile(const char* path) -> std::string {
     std::ifstream stream(path);
@@ -75,6 +76,9 @@ auto main(int argc, char** argv) -> int {
     } else {
         AstPrinter printer;
         printer.print(ast);
+
+        CodeGenerator codegen;
+        codegen.dump(ast);
     }
 
     return 0;
