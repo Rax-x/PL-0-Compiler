@@ -209,7 +209,35 @@ auto CodeGenerator::visit(IfStatement* stmt) -> void {
     m_builder.SetInsertPoint(endBlock);
 }
 
-auto CodeGenerator::visit(WhileStatement* stmt) -> void {}
+auto CodeGenerator::visit(WhileStatement* stmt) -> void {
+
+    Function* function = m_builder.GetInsertBlock()->getParent();
+
+    BasicBlock* whileBlock = BasicBlock::Create(m_context, "while", function);
+    BasicBlock* whileBodyBlock = BasicBlock::Create(m_context, "while_body");
+    BasicBlock* endBlock = BasicBlock::Create(m_context, "loop_end");
+
+    m_builder.CreateBr(whileBlock);
+    m_builder.SetInsertPoint(whileBlock);
+
+    Value* condValue = codegenExpression(stmt->condition);
+    
+    if(condValue == nullptr) {
+        error("Compile Error: unable to generate the code for the condition.");
+        return;
+    }
+
+    m_builder.CreateCondBr(condValue, whileBodyBlock, endBlock);
+    
+    function->insert(function->end(), whileBodyBlock);
+    m_builder.SetInsertPoint(whileBodyBlock);
+    codegenStatement(stmt->body);
+    
+    m_builder.CreateBr(whileBlock);
+    
+    function->insert(function->end(), endBlock);
+    m_builder.SetInsertPoint(endBlock);
+}
     
 auto CodeGenerator::visit(OddExpression* expr) -> void {
 
