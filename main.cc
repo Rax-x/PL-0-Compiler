@@ -20,7 +20,7 @@ program = block "." ;
 block = [ "const" ident "=" number {"," ident "=" number} ";"]
         [ "var" ident {"," ident} ";"]
         { "procedure" ident ";" block ";" } statement ;
-statement = [ ident ":=" expression 
+statement = [ ident ":=" expression
               | "call" ident
               | "?" ident | "!" expression
               | "begin" statement {";" statement } "end"

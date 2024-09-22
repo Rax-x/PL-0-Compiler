@@ -32,8 +32,6 @@ public:
 
     auto dump(StatementPtr& stmt) -> void;
 
- 
-
 private:
 
     auto beginScope() -> void;

@@ -2,6 +2,14 @@
 #include "ast.hpp"
 #include "symtable.hpp"
 #include <iostream>
+#include <llvm-18/llvm/ADT/ArrayRef.h>
+#include <llvm-18/llvm/IR/BasicBlock.h>
+#include <llvm-18/llvm/IR/CallingConv.h>
+#include <llvm-18/llvm/IR/Constant.h>
+#include <llvm-18/llvm/IR/Constants.h>
+#include <llvm-18/llvm/IR/GlobalValue.h>
+#include <llvm-18/llvm/IR/GlobalVariable.h>
+#include <llvm-18/llvm/IR/Instructions.h>
 
 namespace pl0::codegen {
 
@@ -11,19 +19,15 @@ CodeGenerator::CodeGenerator() {
 
     m_module = std::make_unique<Module>("pl0 program", m_context);
 
-    verifyModule(*m_module, &errs());
-
     FunctionType* funcType = FunctionType::get(Type::getVoidTy(m_context), false);
     Function* function = Function::Create(funcType, Function::ExternalLinkage, "__main", m_module.get());
     
     BasicBlock *mainBlock = BasicBlock::Create(m_context, "main_block", function);
     m_builder.SetInsertPoint(mainBlock);
-
-    beginScope();
 }
 
 CodeGenerator::~CodeGenerator(){
-    endScope();
+    verifyModule(*m_module, &errs());
 }
 
 auto CodeGenerator::endProgram() -> void {
@@ -81,17 +85,23 @@ auto CodeGenerator::visit(ConstDeclarations* decl) -> void {
 
 auto CodeGenerator::visit(VariableDeclarations* decl) -> void {
 
+    auto areGlobals = !m_symtable->hasParent();
     auto function = m_builder.GetInsertBlock()->getParent();
+    auto variableType = Type::getInt32Ty(m_context);
 
     for(const auto& [_, lexeme, line] : decl->identifiers){
         
+        AllocaInst* allocaInst = nullptr;
         auto name = std::string(lexeme);
- 
 
-        IRBuilder<> tmpIRBuilder(&function->getEntryBlock(), function->getEntryBlock().begin());
-        auto allocaInst = tmpIRBuilder.CreateAlloca(Type::getInt32Ty(m_context), nullptr, name);
-        
-        m_symtable->insert(name, SymbolEntry::variable(name, allocaInst, line));
+        if(!areGlobals) {
+            IRBuilder<> tmpIRBuilder(&function->getEntryBlock(), function->getEntryBlock().begin());
+            allocaInst = tmpIRBuilder.CreateAlloca(variableType, nullptr, name);
+        } else {
+            m_module->getOrInsertGlobal(name, variableType);
+        }
+
+        m_symtable->insert(name, SymbolEntry::variable(name, allocaInst, line, areGlobals));
     }
 }
 
@@ -100,15 +110,21 @@ auto CodeGenerator::visit(ProcedureDeclaration* decl) -> void {
     auto name = std::string(decl->name.lexeme);
     FunctionType* funcType = FunctionType::get(Type::getVoidTy(m_context), false);
     Function* function = Function::Create(funcType, Function::ExternalLinkage, name, m_module.get());
+
+    m_symtable->insert(name, SymbolEntry::procedure(name, function, decl->name.line));
+
+    BasicBlock* prevBlock = m_builder.GetInsertBlock();
+
     BasicBlock* bblock = BasicBlock::Create(m_context, "entry_"+name, function);
     m_builder.SetInsertPoint(bblock);
 
     codegenStatement(decl->block);
     m_builder.CreateRetVoid();
 
+
     verifyFunction(*function);
 
-    m_symtable->insert(name, SymbolEntry::procedure(name, function, decl->name.line));
+    m_builder.SetInsertPoint(prevBlock);
 }
 
 auto CodeGenerator::visit(AssignStatement* stmt) -> void {
@@ -125,10 +141,17 @@ auto CodeGenerator::visit(AssignStatement* stmt) -> void {
         return;
     }
 
-    auto allocInst = entry->variable();
 
     Value* rvalue = codegenExpression(stmt->rvalue);
-    m_builder.CreateStore(rvalue, allocInst);
+
+    Value* ptr;
+    if(entry->isGlobal()) {
+        ptr = m_module->getNamedGlobal(name);
+    } else {
+        ptr =  entry->variable();
+    }
+    
+    m_builder.CreateStore(rvalue, ptr); 
 }
 
 auto CodeGenerator::visit(CallStatement* stmt) -> void {
@@ -145,11 +168,15 @@ auto CodeGenerator::visit(CallStatement* stmt) -> void {
         return;
     }
 
-    m_builder.CreateCall(entry->procedure(), std::nullopt, "calltmp");
+    m_builder.CreateCall(entry->procedure(), std::nullopt);
 }
 
 auto CodeGenerator::visit(InputStatement* stmt) -> void {}
-auto CodeGenerator::visit(PrintStatement* stmt) -> void {}
+
+auto CodeGenerator::visit(PrintStatement* stmt) -> void {
+    // TODO: call printf
+    // https://github.com/thomaslee/llvm-demo/blob/master/main.cc
+}
 
 auto CodeGenerator::visit(BeginStatement* stmt) -> void {
     for(auto& statement : stmt->statements) {
@@ -161,15 +188,6 @@ auto CodeGenerator::visit(IfStatement* stmt) -> void {
 
     Value* condValue = codegenExpression(stmt->condition);
     
-    if(condValue == nullptr) {
-        error("Compile Error: unable to generate the code for the condition.");
-        return;
-    }
-
-    condValue = m_builder.CreateICmpNE(condValue,
-                                       ConstantInt::getSigned(Type::getInt32Ty(m_context), 0),
-                                       "icmp_netmp");
-
     if(condValue == nullptr) {
         error("Compile Error: unable to generate the code for the condition.");
         return;
@@ -221,7 +239,7 @@ auto CodeGenerator::visit(BinaryExpression* expr) -> void {
     Value* right = codegenExpression(expr->right);
 
     if(left == nullptr || right == nullptr) {
-        error("[Ln: {} ] Compile Error: unable to generate the code for the following expression.", expr->op.line);
+        error("[Ln: {}] Compile Error: unable to generate the code for the following expression.", expr->op.line);
         return;
     }
 
@@ -257,7 +275,7 @@ auto CodeGenerator::visit(BinaryExpression* expr) -> void {
             setValue(m_builder.CreateICmpNE(left, right, "ne_icmptmp"));
             break;
         default:
-            error("[Ln: {} ] Compile Error: '{}' is an invalid binary operator.", expr->op.line, expr->op.lexeme);
+            error("[Ln: {}] Compile Error: '{}' is an invalid binary operator.", expr->op.line, expr->op.lexeme);
             break;
     }
 }
@@ -293,10 +311,20 @@ auto CodeGenerator::visit(VariableExpression* expr) -> void {
     if(entry->isConstant()){
         setValue(entry->constant());
     } else if(entry->isVariable()){
-        auto allocaInst = entry->variable();
-        auto value = m_builder.CreateLoad(allocaInst->getAllocatedType(), 
-                                          allocaInst,
-                                          name.c_str());
+
+        Value* value;
+        if(!entry->isGlobal()){
+            auto allocaInst = entry->variable();
+            value = m_builder.CreateLoad(allocaInst->getAllocatedType(), 
+                                         allocaInst,
+                                         name.c_str());
+        } else {
+            GlobalVariable* variable = m_module->getNamedGlobal(name);
+            value = m_builder.CreateLoad(variable->getValueType(), 
+                                 variable,
+                                 name.c_str());
+        }
+
         setValue(value);
     } else {
         error("Compile Error: function aren't first class objects.");

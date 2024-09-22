@@ -8,9 +8,9 @@ auto SymbolTable::lookup(const std::string& key) -> SymbolEntry* {
         return &m_symbols.at(key);
     }
 
-    if(m_parent == nullptr) return nullptr;
+    if(parent() == nullptr) return nullptr;
 
-    return m_parent->lookup(key);
+    return parent()->lookup(key);
 }
 
 auto SymbolTable::insert(const std::string& key, SymbolEntry info) -> bool {

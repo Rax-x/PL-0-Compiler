@@ -2,6 +2,7 @@
 #define _SYMTABLE_HPP_
 
 #include <llvm-18/llvm/IR/Constant.h>
+#include <llvm-18/llvm/IR/GlobalVariable.h>
 #include <memory>
 #include <string>
 #include <cstdint>
@@ -19,8 +20,8 @@ private:
     SymbolEntry(std::string name, llvm::Value* value, std::uint32_t line)
         : m_name(std::move(name)), m_data(value), m_line(line) {}
 
-    SymbolEntry(std::string name, llvm::AllocaInst* value, std::uint32_t line)
-        : m_name(std::move(name)), m_data(value), m_line(line) {}
+    SymbolEntry(std::string name, llvm::AllocaInst* value, std::uint32_t line, bool isGlobal = false)
+        : m_name(std::move(name)), m_data(value), m_line(line), m_isGlobal(isGlobal) {}
 
     SymbolEntry(std::string name, llvm::Function* value, std::uint32_t line)
         : m_name(std::move(name)), m_data(value), m_line(line) {}
@@ -32,8 +33,8 @@ public:
         return SymbolEntry(std::move(name), value, line);
     }
 
-    static auto variable(std::string name, llvm::AllocaInst* value, std::uint32_t line) -> SymbolEntry {
-        return SymbolEntry(std::move(name), value, line);
+    static auto variable(std::string name, llvm::AllocaInst* value, std::uint32_t line, bool gloabl = false) -> SymbolEntry {
+        return SymbolEntry(std::move(name), value, line, gloabl);
     }
 
     static auto procedure(std::string name, llvm::Function* value, std::uint32_t line) -> SymbolEntry {
@@ -51,6 +52,10 @@ public:
     constexpr auto isVariable() const -> bool {
         return std::holds_alternative<llvm::AllocaInst*>(m_data);
     } 
+
+    constexpr auto isGlobal() const -> bool {
+        return m_isGlobal;
+    }
 
     constexpr auto procedure() const -> llvm::Function* {
         return std::get<llvm::Function*>(m_data);
@@ -76,6 +81,7 @@ private:
     std::string m_name;
     std::variant<llvm::Value*, llvm::Function*, llvm::AllocaInst*>  m_data;
     std::uint32_t m_line;
+    bool m_isGlobal;
 };
 
 class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
