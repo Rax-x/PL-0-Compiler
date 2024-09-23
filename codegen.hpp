@@ -15,6 +15,17 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 
+#include "llvm/IR/GlobalValue.h"
+#include "llvm/IR/GlobalVariable.h"
+
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
+#include "llvm/TargetParser/Host.h"
+
 #include <memory>
 #include <format>
 
@@ -30,7 +41,8 @@ public:
     CodeGenerator();
     ~CodeGenerator();
 
-    auto dump(StatementPtr& stmt) -> void;
+    auto generateObjectFile(StatementPtr& stmt, const char* filename) -> void;
+    auto dump() -> void;
 
 private:
 

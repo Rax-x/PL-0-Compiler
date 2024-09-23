@@ -78,7 +78,7 @@ auto main(int argc, char** argv) -> int {
         printer.print(ast);
 
         CodeGenerator codegen;
-        codegen.dump(ast);
+        codegen.generateObjectFile(ast, "program.o");
     }
 
     return 0;

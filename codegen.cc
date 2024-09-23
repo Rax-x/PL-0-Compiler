@@ -2,14 +2,18 @@
 #include "ast.hpp"
 #include "symtable.hpp"
 #include <iostream>
-#include <llvm-18/llvm/ADT/ArrayRef.h>
-#include <llvm-18/llvm/IR/BasicBlock.h>
-#include <llvm-18/llvm/IR/CallingConv.h>
-#include <llvm-18/llvm/IR/Constant.h>
 #include <llvm-18/llvm/IR/Constants.h>
-#include <llvm-18/llvm/IR/GlobalValue.h>
 #include <llvm-18/llvm/IR/GlobalVariable.h>
-#include <llvm-18/llvm/IR/Instructions.h>
+#include <llvm-18/llvm/IR/Verifier.h>
+#include <llvm-18/llvm/MC/TargetRegistry.h>
+#include <llvm-18/llvm/Support/CodeGen.h>
+#include <llvm-18/llvm/Support/FileSystem.h>
+#include <llvm-18/llvm/Support/TargetSelect.h>
+#include <llvm-18/llvm/Support/raw_ostream.h>
+#include <llvm-18/llvm/Target/TargetOptions.h>
+#include <system_error>
+
+#include "llvm/IR/LegacyPassManager.h"
 
 namespace pl0::codegen {
 
@@ -19,8 +23,8 @@ CodeGenerator::CodeGenerator() {
 
     m_module = std::make_unique<Module>("pl0 program", m_context);
 
-    FunctionType* funcType = FunctionType::get(Type::getVoidTy(m_context), false);
-    Function* function = Function::Create(funcType, Function::ExternalLinkage, "__main", m_module.get());
+    FunctionType* funcType = FunctionType::get(Type::getInt32Ty(m_context), false);
+    Function* function = Function::Create(funcType, Function::ExternalLinkage, "main", m_module.get());
     
     BasicBlock *mainBlock = BasicBlock::Create(m_context, "main_block", function);
     m_builder.SetInsertPoint(mainBlock);
@@ -30,15 +34,74 @@ CodeGenerator::~CodeGenerator(){
     verifyModule(*m_module, &errs());
 }
 
+
+auto CodeGenerator::generateObjectFile(StatementPtr& stmt, const char* filename) -> void {
+
+    codegenStatement(stmt);
+    endProgram();
+    
+    if(hadError()) {
+        for(const auto& error : errors()){
+            std::cout << error << '\n';
+        }
+
+        return;
+    }
+
+    verifyModule(*m_module, &errs());
+
+    auto targetTriple = llvm::sys::getDefaultTargetTriple();
+    
+    InitializeAllTargetInfos();
+    InitializeAllTargets();
+    InitializeAllTargetMCs();
+    InitializeAllAsmParsers();
+    InitializeAllAsmPrinters();
+
+    std::string error;
+    auto target = TargetRegistry::lookupTarget(targetTriple, error);
+
+    if(target == nullptr) {
+        errs() << error;
+        return;
+    }
+
+    TargetOptions opt;
+    auto targetMachine = target->createTargetMachine(targetTriple, "generic", "", opt, Reloc::PIC_);
+
+    m_module->setDataLayout(targetMachine->createDataLayout());
+    m_module->setTargetTriple(targetTriple);
+
+    verifyModule(*m_module, &errs());
+
+    std::error_code err;
+    llvm::raw_fd_ostream stream(filename, err, sys::fs::OF_None);
+
+    if(err) {
+        errs() << "Could not open the file: " << err.message() << '\n';
+        return;
+    }
+
+    legacy::PassManager pass;
+    auto fileType = CodeGenFileType::ObjectFile;
+
+    if (targetMachine->addPassesToEmitFile(pass, stream, nullptr, fileType)) {
+        errs() << "TargetMachine can't emit a file of this type";
+        return;
+    }
+
+    pass.run(*m_module);
+    stream.flush();
+
+    dump();
+}
+
 auto CodeGenerator::endProgram() -> void {
-    m_builder.CreateRetVoid();
+    m_builder.CreateRet(ConstantInt::getSigned(m_builder.getInt32Ty(), 0));
     verifyFunction(*m_builder.GetInsertBlock()->getParent());
 }
 
-auto CodeGenerator::dump(StatementPtr& stmt) -> void {
-    codegenStatement(stmt);
-    endProgram();
-
+auto CodeGenerator::dump() -> void {
     if(hadError()){
         for(const auto& error : errors()){
             std::cout << error << '\n';
@@ -98,7 +161,13 @@ auto CodeGenerator::visit(VariableDeclarations* decl) -> void {
             IRBuilder<> tmpIRBuilder(&function->getEntryBlock(), function->getEntryBlock().begin());
             allocaInst = tmpIRBuilder.CreateAlloca(variableType, nullptr, name);
         } else {
-            m_module->getOrInsertGlobal(name, variableType);
+            auto global = new GlobalVariable(*m_module, 
+                                             variableType, 
+                                             false, 
+                                             GlobalVariable::ExternalLinkage,
+                                             ConstantInt::getSigned(m_builder.getInt32Ty(), 0), 
+                                             name);
+           global->setDSOLocal(true);
         }
 
         m_symtable->insert(name, SymbolEntry::variable(name, allocaInst, line, areGlobals));
@@ -313,7 +382,7 @@ auto CodeGenerator::visit(UnaryExpression* expr) -> void {
     Value* right = codegenExpression(expr->right);
 
     if(right == nullptr) {
-        error("[Ln: {} ] Compile Error: unable to generate the code for the following expression.", expr->op.line);
+        error("[Ln: {}] Compile Error: unable to generate the code for the following expression.", expr->op.line);
         return;
     }
 
