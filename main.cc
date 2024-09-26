@@ -56,11 +56,31 @@ static auto readFile(const char* path) -> std::string {
 auto main(int argc, char** argv) -> int {
 
     if(argc < 2){
-        std::cerr << "Usage: " << argv[0] << " <path>" << std::endl;
+
+        std::cerr << "Usage: " << argv[0] << " [-llvm] [-ast] <file>\n"
+            << "    -llvm\tDump LLVM IR\n"
+            << "    -ast\tDump AST\n"
+            << std::endl;
+
         std::exit(EXIT_FAILURE);
     }
 
-    std::string_view filename = argv[1];
+    bool dumpIR = false;
+    bool dumpAST = false;
+
+    char** args;
+    for(args = argv + 1; *args != argv[argc]; args++){
+
+        if(**args != '-') break;
+
+        if(std::strncmp(*args, "-llvm", 5) == 0) {
+            dumpIR = true;
+        } else if(std::strncmp(*args, "-ast", 4) == 0){
+            dumpAST = true;
+        }
+    }
+
+    std::string_view filename = *args;
 
     if(!filename.ends_with(".pl0")) {
         std::cerr << "Invalid file. This file doesn't have '.pl0' file extension.\n";
@@ -80,18 +100,21 @@ auto main(int argc, char** argv) -> int {
             std::cout << error << '\n';
         }
 
-        return EXIT_FAILURE;
+        std::exit(EXIT_FAILURE);
     }
 
+    if(dumpAST) {
+        AstPrinter printer;
+        printer.print(ast);
 
-    AstPrinter printer;
-    printer.print(ast);
+        if(!dumpIR) return EXIT_SUCCESS;
+    }
 
     filename.remove_suffix(4); // remove .pl0
     CodeGenerator codegen(filename);
 
     if(!codegen.generate(ast)) {
-        return EXIT_FAILURE;
+        std::exit(EXIT_FAILURE);
     }
 
     if(codegen.hadError()) {
@@ -99,11 +122,14 @@ auto main(int argc, char** argv) -> int {
             std::cout << error << '\n';
         }
 
-        return EXIT_FAILURE;
+        std::exit(EXIT_FAILURE);
     } 
 
-    codegen.dumpLLVM();
-    codegen.produceObjectFile();
+    if(dumpIR) {
+        codegen.dumpLLVM();
+    } else {
+        codegen.produceObjectFile();
+    }
 
     return 0;
 }

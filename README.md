@@ -61,6 +61,7 @@ gcc program.o -o myprogram
 - [x] Code refactor (the codegen code is a little bit unredable).
 - [x] Generate the object file with the same name of the input file.
 - [ ] Invoke the `clang` or `gcc` internally.
+- [ ] Initialize even local variables to zero.
 
 # Resources
 
