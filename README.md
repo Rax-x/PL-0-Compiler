@@ -26,11 +26,11 @@ end;
 
 procedure recursiveDecrement;
 begin
-        if start > 0 then
-        begin
-                start := start - 1;
-                call recursiveDecrement
-        end
+  if start > 0 then
+  begin
+    start := start - 1;
+    call recursiveDecrement
+  end
 end;
 
 begin
@@ -48,12 +48,9 @@ end.
 
 **How generate the executable?**
 
-> [!NOTE]
-> This compiler generate an object file called `program.o`.
-
 First of all generate the object file with `./pl0 myprogram.pl0` and after link it with `clang` or `gcc`.
 ```bash
-gcc program.o -o myprogram
+gcc myprogram.o -o myprogram
 ```
 
 ## TODO
@@ -66,7 +63,7 @@ gcc program.o -o myprogram
 # Resources
 
 - [LLVM Kaleidoscope](https://llvm.org/docs/tutorial/)
-- [Clang Source code](https://github.com/llvm/llvm-project/tree/main/clang/)
+- [Clang Source Code](https://github.com/llvm/llvm-project/tree/main/clang/)
 - [LLVM Language Reference](https://llvm.org/docs/LangRef.html)
 
 
