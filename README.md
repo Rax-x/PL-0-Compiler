@@ -24,9 +24,21 @@ begin
       start := start + 1
 end;
 
+procedure recursiveDecrement;
+begin
+        if start > 0 then
+        begin
+                start := start - 1;
+                call recursiveDecrement
+        end
+end;
+
 begin
   ?start;
   call countFromStartToMax;
+  !start;
+
+  call recursiveDecrement;
   !start
 end.
 ```
@@ -46,8 +58,8 @@ gcc program.o -o myprogram
 
 ## TODO
 
-- [ ] Code refactor (the codegen code is a little bit unredable).
-- [ ] Generate the object file with the same name of the input file.
+- [x] Code refactor (the codegen code is a little bit unredable).
+- [x] Generate the object file with the same name of the input file.
 - [ ] Invoke the `clang` or `gcc` internally.
 
 # Resources

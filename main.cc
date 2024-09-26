@@ -60,7 +60,14 @@ auto main(int argc, char** argv) -> int {
         std::exit(EXIT_FAILURE);
     }
 
-    auto source = readFile(argv[1]);
+    std::string_view filename = argv[1];
+
+    if(!filename.ends_with(".pl0")) {
+        std::cerr << "Invalid file. This file doesn't have '.pl0' file extension.\n";
+        std::exit(EXIT_FAILURE);
+    }
+
+    auto source = readFile(filename.data());
     Tokenizer tokenizer = Tokenizer(source);
     
     auto tokens = tokenizer.tokenize();
@@ -72,13 +79,31 @@ auto main(int argc, char** argv) -> int {
         for(const auto& error : parser.errors()){
             std::cout << error << '\n';
         }
-    } else {
-        AstPrinter printer;
-        printer.print(ast);
 
-        CodeGenerator codegen;
-        codegen.generateObjectFile(ast, "program.o");
+        return EXIT_FAILURE;
     }
+
+
+    AstPrinter printer;
+    printer.print(ast);
+
+    filename.remove_suffix(4); // remove .pl0
+    CodeGenerator codegen(filename);
+
+    if(!codegen.generate(ast)) {
+        return EXIT_FAILURE;
+    }
+
+    if(codegen.hadError()) {
+        for(const auto& error : codegen.errors()){
+            std::cout << error << '\n';
+        }
+
+        return EXIT_FAILURE;
+    } 
+
+    codegen.dumpLLVM();
+    codegen.produceObjectFile();
 
     return 0;
 }

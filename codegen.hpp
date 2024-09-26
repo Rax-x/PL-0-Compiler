@@ -9,9 +9,11 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Constants.h"
 
 #include <memory>
 #include <format>
+#include <string_view>
 
 namespace pl0::codegen {
 
@@ -20,19 +22,31 @@ using namespace ast;
 using namespace error;
 using namespace llvm;
 
-class CodeGenerator : public AstVisitor, ErrorsHolderTrait {
+class CodeGenerator : public AstVisitor, 
+                      public ErrorsHolderTrait {
 public:
-    CodeGenerator();
-    ~CodeGenerator();
+    CodeGenerator(std::string_view moduleName);
 
-    auto generateObjectFile(StatementPtr& stmt, const char* filename) -> void;
-    auto dump() -> void;
+    auto generate(StatementPtr& stmt) -> bool;
+    auto produceObjectFile() -> void;
+
+    inline auto dumpLLVM() const -> void {
+        m_module->print(outs(), nullptr);
+    }
 
 private:
 
     auto beginScope() -> void;
     auto endScope() -> void;
     auto endProgram() -> void;
+
+    inline auto getIntegerType() -> Type* {
+        return m_builder.getInt32Ty();
+    }
+
+    inline auto getIntegerConstant(int value) -> Constant* {
+        return ConstantInt::getSigned(getIntegerType(), value);
+    }
 
     auto visit(Block* block) -> void;
     auto visit(ConstDeclarations* decl) -> void;
@@ -80,6 +94,8 @@ private:
     }
 
 private:
+
+    std::string m_moduleName;
 
     Value* m_value = nullptr;
     LLVMContext m_context;

@@ -3,40 +3,36 @@
 
 #include <memory>
 #include <string>
-#include <cstdint>
 #include <variant>
 #include <unordered_map>
 
 #include "llvm/IR/Function.h"
-#include "llvm/IR/Instructions.h"
 #include "llvm/IR/Value.h"
 
 namespace pl0::symtable {
 
+
 class SymbolEntry {
 private:
-    SymbolEntry(std::string name, llvm::Value* value, std::uint32_t line)
-        : m_name(std::move(name)), m_data(value), m_line(line) {}
+    SymbolEntry(llvm::Value* value, bool isConstant)
+        : m_data(value), m_isConstant(isConstant) {}
 
-    SymbolEntry(std::string name, llvm::AllocaInst* value, std::uint32_t line, bool isGlobal = false)
-        : m_name(std::move(name)), m_data(value), m_line(line), m_isGlobal(isGlobal) {}
-
-    SymbolEntry(std::string name, llvm::Function* value, std::uint32_t line)
-        : m_name(std::move(name)), m_data(value), m_line(line) {}
+    SymbolEntry(llvm::Function* value)
+        : m_data(value), m_isConstant(false) {}
 
 public:
     SymbolEntry() = default;
 
-    static auto constant(std::string name, llvm::Value* value, std::uint32_t line) -> SymbolEntry {
-        return SymbolEntry(std::move(name), value, line);
+    static inline auto constant(llvm::Value* value) -> SymbolEntry {
+        return SymbolEntry(value, true);
     }
 
-    static auto variable(std::string name, llvm::AllocaInst* value, std::uint32_t line, bool gloabl = false) -> SymbolEntry {
-        return SymbolEntry(std::move(name), value, line, gloabl);
+    static inline auto variable(llvm::Value* value) -> SymbolEntry {
+        return SymbolEntry(value, false);
     }
 
-    static auto procedure(std::string name, llvm::Function* value, std::uint32_t line) -> SymbolEntry {
-        return SymbolEntry(std::move(name), value, line);
+    static inline auto procedure(llvm::Function* value) -> SymbolEntry {
+        return SymbolEntry(value);
     }
 
     constexpr auto isProcedure() const -> bool {
@@ -44,15 +40,11 @@ public:
     }
 
     constexpr auto isConstant() const -> bool {
-        return std::holds_alternative<llvm::Value*>(m_data);
+        return m_isConstant;
     }
 
     constexpr auto isVariable() const -> bool {
-        return std::holds_alternative<llvm::AllocaInst*>(m_data);
-    } 
-
-    constexpr auto isGlobal() const -> bool {
-        return m_isGlobal;
+        return !isConstant() && !isProcedure();
     }
 
     constexpr auto procedure() const -> llvm::Function* {
@@ -63,23 +55,14 @@ public:
         return std::get<llvm::Value*>(m_data);
     }
 
-    constexpr auto variable() -> llvm::AllocaInst* {
-        return std::get<llvm::AllocaInst*>(m_data);
+    constexpr auto variable() -> llvm::Value* {
+        return std::get<llvm::Value*>(m_data);
     } 
 
-    inline auto name() const -> const std::string& {
-        return m_name;
-    }
-
-    constexpr auto line() const -> std::uint32_t {
-        return m_line;
-    }
     
 private:
-    std::string m_name;
-    std::variant<llvm::Value*, llvm::Function*, llvm::AllocaInst*>  m_data;
-    std::uint32_t m_line;
-    bool m_isGlobal;
+    std::variant<llvm::Value*, llvm::Function*>  m_data;
+    bool m_isConstant;
 };
 
 class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
