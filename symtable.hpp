@@ -1,8 +1,6 @@
 #ifndef _SYMTABLE_HPP_
 #define _SYMTABLE_HPP_
 
-#include <llvm-18/llvm/IR/Constant.h>
-#include <llvm-18/llvm/IR/GlobalVariable.h>
 #include <memory>
 #include <string>
 #include <cstdint>

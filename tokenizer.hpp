@@ -1,12 +1,12 @@
 #ifndef _TOKENIZER_HPP_
 #define _TOKENIZER_HPP_
 
+#include "token.hpp"
+
+#include <vector>
 #include <cstdint>
 #include <string_view>
-#include <vector>
 #include <unordered_map>
-
-#include "token.hpp"
 
 namespace pl0::tokenizer {
 

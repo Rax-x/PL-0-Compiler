@@ -1,16 +1,16 @@
 #ifndef _PARSER_HPP_
 #define _PARSER_HPP_
 
-#include <initializer_list>
-#include <optional>
-#include <string_view>
-#include <utility>
+#include "ast.hpp"
+#include "token.hpp"
+#include "errors_holder_trait.hpp"
+
 #include <vector>
 #include <format>
-
-#include "errors_holder_trait.hpp"
-#include "token.hpp"
-#include "ast.hpp"
+#include <utility>
+#include <optional>
+#include <string_view>
+#include <initializer_list>
 
 namespace pl0::parser {
 

@@ -2,7 +2,6 @@
 #define _AST_HPP_
 
 #include <memory>
-#include <type_traits>
 #include <vector>
 
 #include "token.hpp"

@@ -1,20 +1,25 @@
 #include "codegen.hpp"
-#include "ast.hpp"
-#include "symtable.hpp"
-#include <iostream>
-#include <llvm-18/llvm/ADT/SmallVector.h>
-#include <llvm-18/llvm/IR/Constants.h>
-#include <llvm-18/llvm/IR/GlobalVariable.h>
-#include <llvm-18/llvm/IR/Verifier.h>
-#include <llvm-18/llvm/MC/TargetRegistry.h>
-#include <llvm-18/llvm/Support/CodeGen.h>
-#include <llvm-18/llvm/Support/FileSystem.h>
-#include <llvm-18/llvm/Support/TargetSelect.h>
-#include <llvm-18/llvm/Support/raw_ostream.h>
-#include <llvm-18/llvm/Target/TargetOptions.h>
-#include <system_error>
 
+#include "llvm/ADT/SmallVector.h"
+
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/LegacyPassManager.h"
+
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
+#include "llvm/TargetParser/Host.h"
+
+#include <iostream>
+#include <system_error>
 
 namespace pl0::codegen {
 

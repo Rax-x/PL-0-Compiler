@@ -4,7 +4,6 @@
 #include <iostream>
 #include <ostream>
 
-#include "ast.hpp"
 #include "tokenizer.hpp"
 #include "parser.hpp"
 #include "codegen.hpp"
