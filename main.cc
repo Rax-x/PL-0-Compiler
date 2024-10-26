@@ -57,8 +57,9 @@ auto main(int argc, char** argv) -> int {
 
     if(argc < 2){
 
-        std::cerr << "Usage: " << argv[0] << " [-llvm] [-ast] <file>\n"
+        std::cerr << "Usage: " << argv[0] << " [-llvm] [-ast] [-object] <file>\n"
             << "    -llvm\tDump LLVM IR\n"
+            << "    -object\tProduce only the object file\n"
             << "    -ast\tDump AST\n"
             << std::endl;
 
@@ -67,6 +68,7 @@ auto main(int argc, char** argv) -> int {
 
     bool dumpIR = false;
     bool dumpAST = false;
+    bool produceOnlyObject = false;
 
     char** args;
     for(args = argv + 1; *args != argv[argc]; args++){
@@ -77,6 +79,11 @@ auto main(int argc, char** argv) -> int {
             dumpIR = true;
         } else if(std::strncmp(*args, "-ast", 4) == 0){
             dumpAST = true;
+        } else if(std::strncmp(*args, "-object", 7) == 0) {
+            produceOnlyObject = true;
+        } else {
+            std::cerr << "Unknow option '" << *args << "'.\n";
+            std::exit(EXIT_FAILURE);
         }
     }
 
@@ -129,7 +136,14 @@ auto main(int argc, char** argv) -> int {
         codegen.dumpLLVM();
     } else {
         codegen.produceObjectFile();
+
+        if(!produceOnlyObject) {
+            if(!codegen.produceExecutable()) {
+                std::cerr << "An error occurred while generating the executable." << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
+        }
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }

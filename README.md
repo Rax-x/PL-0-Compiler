@@ -48,17 +48,15 @@ end.
 
 **How generate the executable?**
 
-First of all generate the object file with `./pl0 myprogram.pl0` and after link it with `clang` or `gcc`.
-```bash
-gcc myprogram.o -o myprogram
-```
+Run `./pl0 myprogram.pl0` and simply execute the executable `./myprogram`
 
 ## TODO
 
 - [x] Code refactor (the codegen code is a little bit unredable).
 - [x] Generate the object file with the same name of the input file.
-- [ ] Invoke the `clang` or `gcc` internally.
+- [x] Invoke the `clang` or `gcc` internally.
 - [ ] Initialize even local variables to zero.
+- [ ] Make expressions printable with `!` operator.
 
 # Resources
 

@@ -1,4 +1,5 @@
 #include "codegen.hpp"
+#include "os.hpp"
 
 #include "llvm/ADT/SmallVector.h"
 
@@ -96,6 +97,28 @@ auto CodeGenerator::produceObjectFile() -> void {
 
     pass.run(*m_module);
     stream.flush();
+}
+
+auto CodeGenerator::produceExecutable() -> bool {
+    const std::string objectFile = m_moduleName + ".o";
+
+#ifdef __GNUC__
+    const char* const compilerName = "g++";
+#elif __clang__
+    const char* const compilerName = "clang";
+#else
+    #error Unsupported compiler
+#endif
+    
+    char* const args[] = {
+        const_cast<char*>(compilerName), 
+        const_cast<char*>(objectFile.c_str()), 
+        const_cast<char*>("-o"), 
+        const_cast<char*>(m_moduleName.c_str()),
+        nullptr,
+    };
+
+    return os::spawnProcess(compilerName, args) == 0;
 }
 
 auto CodeGenerator::endProgram() -> void {
