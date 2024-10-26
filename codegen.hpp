@@ -30,6 +30,9 @@ public:
     auto generate(StatementPtr& stmt) -> bool;
     auto produceObjectFile() -> void;
 
+    [[nodiscard]] 
+    auto produceExecutable() -> bool;
+
     inline auto dumpLLVM() const -> void {
         m_module->print(outs(), nullptr);
     }
