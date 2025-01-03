@@ -200,14 +200,14 @@ struct InputStatement final : public Statement {
 };
 
 struct PrintStatement final : public Statement {
-    PrintStatement(Token argument)
-        : argument(argument) {}
+    PrintStatement(ExpressionPtr& arg)
+        : argument(std::move(arg)) {}
 
     auto accept(AstVisitor* visitor) -> void {
         visitor->visit(this);
     }
 
-    Token argument;
+    ExpressionPtr argument;
 };
 
 struct BeginStatement final : public Statement {

@@ -161,11 +161,8 @@ auto Parser::inputStatement() -> StatementPtr{
 }
 
 auto Parser::printStatement() -> StatementPtr {
-    auto ident = consume(TokenType::Identifier, "Expect an identifier.");
-
-    return ident.has_value()
-        ? buildStatement<PrintStatement>(ident.value())
-        : nullptr;
+    auto expr = expression();
+    return buildStatement<PrintStatement>(expr);
 }
 
 auto Parser::beginStatement() -> StatementPtr{

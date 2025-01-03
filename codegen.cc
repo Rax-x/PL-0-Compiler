@@ -28,7 +28,6 @@ using token::TokenType;
 
 CodeGenerator::CodeGenerator(std::string_view moduleName)
     : m_moduleName(moduleName) {
-
     m_module = std::make_unique<Module>(moduleName, m_context);
 
     // printf & scanf functions signature
@@ -45,6 +44,11 @@ CodeGenerator::CodeGenerator(std::string_view moduleName)
     
     BasicBlock *mainBlock = BasicBlock::Create(m_context, "entry", function);
     m_builder.SetInsertPoint(mainBlock);
+
+    // printf & scanf format strings
+    m_builder.CreateGlobalStringPtr("%d\n", "__printf_fmt");
+    m_builder.CreateGlobalStringPtr("%d", "__scanf_fmt");
+
 }
 
 auto CodeGenerator::generate(StatementPtr& ast) -> bool {
@@ -271,7 +275,7 @@ auto CodeGenerator::visit(InputStatement* stmt) -> void {
 
     SmallVector<Value*, 2> args;
 
-    args.push_back(m_builder.CreateGlobalStringPtr("%d", "scanf_fmt"));
+    args.push_back(m_module->getNamedValue("__scanf_fmt"));
     args.push_back(entry->variable());
 
     m_builder.CreateCall(m_module->getFunction("scanf"), args, "call_scanftmp");
@@ -279,27 +283,10 @@ auto CodeGenerator::visit(InputStatement* stmt) -> void {
 
 auto CodeGenerator::visit(PrintStatement* stmt) -> void {
 
-    std::string name{stmt->argument.lexeme};
-    SymbolEntry* entry = m_symtable->lookup(name);
-
-    if(entry == nullptr) {
-        error("[Ln: {}] Compile Error: '{}' undeclared symbol.", stmt->argument.line, name);
-        return;
-    }
-
-    if(entry->isProcedure()){
-        error("[Ln: {}] Compile Error: can't print a procedure '{}'.", stmt->argument.line, name);
-        return;
-    }
-
     SmallVector<Value*, 2> args;
-    args.push_back(m_builder.CreateGlobalStringPtr("%d\n", "printf_fmt"));
 
-    if(entry->isVariable()) {
-        args.push_back(m_builder.CreateLoad(getIntegerType(), entry->variable(), name+"tmp"));
-    } else {
-        args.push_back(entry->constant());
-    }
+    args.push_back(m_module->getNamedValue("__printf_fmt"));
+    args.push_back(codegenExpression(stmt->argument));
 
     m_builder.CreateCall(m_module->getFunction("printf"), args, "call_printftmp");
 }
