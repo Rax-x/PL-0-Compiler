@@ -138,7 +138,14 @@ auto AstPrinter::visit(InputStatement* stmt) -> void {
 }
 
 auto AstPrinter::visit(PrintStatement* stmt) -> void {
-    std::cout << "PrintStatement: " << stmt->argument.lexeme;
+    std::cout << "PrintStatement:";
+
+    indent();
+    newline();
+
+    stmt->argument->accept(this);
+
+    dedent();
 }
 
 auto AstPrinter::visit(BeginStatement* stmt) -> void {

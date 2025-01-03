@@ -56,13 +56,10 @@ Run `./pl0 myprogram.pl0` and simply execute the executable `./myprogram`
 - [x] Generate the object file with the same name of the input file.
 - [x] Invoke the `clang` or `gcc` internally.
 - [ ] Initialize even local variables to zero.
-- [ ] Make expressions printable with `!` operator.
+- [X] Make expressions printable with `!` operator.
 
 # Resources
 
 - [LLVM Kaleidoscope](https://llvm.org/docs/tutorial/)
 - [Clang Source Code](https://github.com/llvm/llvm-project/tree/main/clang/)
 - [LLVM Language Reference](https://llvm.org/docs/LangRef.html)
-
-
-
