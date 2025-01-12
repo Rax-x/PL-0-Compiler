@@ -180,9 +180,12 @@ auto CodeGenerator::visit(VariableDeclarations* decl) -> void {
         std::string name{lexeme};
 
         if(!areGlobals) {
+
             IRBuilder<> tmpIRBuilder(&function->getEntryBlock(), function->getEntryBlock().begin());
             value = tmpIRBuilder.CreateAlloca(variableType, nullptr, name);
+            tmpIRBuilder.CreateStore(getIntegerConstant(0), value);
         } else {
+
             GlobalVariable* global = new GlobalVariable(*m_module, 
                                              variableType, 
                                              false, 
@@ -194,7 +197,11 @@ auto CodeGenerator::visit(VariableDeclarations* decl) -> void {
            value = global;
         }
 
-        m_symtable->insert(name, SymbolEntry::variable(value));
+        if(!m_symtable->insert(name, SymbolEntry::variable(value))) {
+            const char* const kind = areGlobals ? "global" : "local";
+            error("[Ln: {}] Compile Error: {} variable '{}' already declared.", line, kind, lexeme);
+            return;
+        }
     }
 }
 
@@ -455,7 +462,7 @@ auto CodeGenerator::visit(VariableExpression* expr) -> void {
         return;
     }
 
-    error("[Ln: {}] Compile Error: function aren't first class objects.", expr->name.line);
+    error("[Ln: {}] Compile Error: functions are not first class objects.", expr->name.line);
 }
 
 auto CodeGenerator::visit(LiteralExpression* expr) -> void {
