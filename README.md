@@ -13,50 +13,93 @@ For more details about this language check out the Wikipedia [article](https://e
 ### Example
 
 ```pascal
+const ADD = 0, SUB = 1, MULT = 2, DIV = 3;
+var firstOperand, secondOperand, operator, done, zeroDivisionError; 
 
-const MAX = 100;
-var start;
-
-procedure countFromStartToMax;
+procedure printErrorCode;
+const ERROR = 2147483647;
 begin
-  if start < MAX then
-    while start < MAX do
-      start := start + 1
+   !(-ERROR) - 1
 end;
 
-procedure recursiveDecrement;
+procedure setZeroDivisionError;
 begin
-  if start > 0 then
-  begin
-    start := start - 1;
-    call recursiveDecrement
-  end
+   zeroDivisionError := 1
+end;
+
+procedure resetZeroDivisionError;
+begin
+   zeroDivisionError := 0
+end;
+
+procedure add;
+begin
+   !(firstOperand + secondOperand)
+end;
+
+procedure sub;
+begin
+   !(firstOperand - secondOperand)
+end;
+
+procedure mult;
+begin
+   !(firstOperand * secondOperand)
+end;
+
+procedure div;
+begin
+   if secondOperand # 0 then
+      !(firstOperand / secondOperand);
+
+   if secondOperand = 0 then
+      call setZeroDivisionError
 end;
 
 begin
-  ?start;
-  call countFromStartToMax;
-  !start;
+   while done = 0 do
+   begin
+      ?operator;
 
-  call recursiveDecrement;
-  !start
+      if operator < 0 then
+         operator := -operator;
+
+      if operator > DIV then
+         done := 1;
+
+      if operator <= DIV then
+      begin
+
+         ?firstOperand;
+         ?secondOperand;
+
+         if operator = ADD then
+            call add;
+
+         if operator = SUB then
+            call sub;
+
+         if operator = MULT then
+            call mult;
+
+         if operator = DIV then
+         begin
+            call div;
+            if zeroDivisionError = 1 then
+            begin
+               call printErrorCode;
+               call resetZeroDivisionError
+            end
+         end
+
+      end
+   end
 end.
 ```
-
-> [!WARNING]
-> Only global variables are initialized to 0.
 
 **How generate the executable?**
 
 Run `./pl0 myprogram.pl0` and simply execute the executable `./myprogram`
-
-## TODO
-
-- [x] Code refactor (the codegen code is a little bit unredable).
-- [x] Generate the object file with the same name of the input file.
-- [x] Invoke the `clang` or `gcc` internally.
-- [ ] Initialize even local variables to zero.
-- [X] Make expressions printable with `!` operator.
 
 # Resources
 
