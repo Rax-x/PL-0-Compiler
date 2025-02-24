@@ -1,4 +1,4 @@
-# PL/0 Compiler
+# 🔨 PL/0 Compiler
 
 This is a compiler for the programming language PL/0 introduced by [Niklaus Wirth](https://en.wikipedia.org/wiki/Niklaus_Wirth) in the book, 
 [Algorithms + Data Structures = Programs](https://en.wikipedia.org/wiki/Algorithms_%2B_Data_Structures_%3D_Programs), as an example of how to construct a compiler.
@@ -7,11 +7,26 @@ Because of its simplicity, I consider it a good starting point to learn how buil
 For more details about this language check out the Wikipedia [article](https://en.wikipedia.org/wiki/PL/0).
 
 > [!IMPORTANT]
-> The focus of this project is not to design a good and fast compiler, but just to learn how use the LLVM to develop compilers backends.
-> So all the components of this compiler (lexer, parsers, error reporting, etc.) are really basic.
+> The focus of this project is not to design a good and fast compiler, but just to learn how use the LLVM to develop compilers.
+> So all the components of this compiler (lexer, parser, error reporting, etc.) are really basic.
 
-### Example
+## 👩‍💻 Installation
+### 📜 Prerequisites
 
+- `g++` or `clang++` compiler
+- LLVM
+- `make` 
+
+### ⚒️ How to build the compiler?
+
+In your terminal run the following command to build the compiler:
+```bash
+make
+```
+
+## 🧪 Example
+
+Let's take the following PL/0 program:
 ```pascal
 const ADD = 0, SUB = 1, MULT = 2, DIV = 3;
 var firstOperand, secondOperand, operator, done, zeroDivisionError; 
@@ -97,11 +112,19 @@ begin
 end.
 ```
 
-**How generate the executable?**
+To generate the executable  we run:
 
-Run `./pl0 myprogram.pl0` and simply execute the executable `./myprogram`
+```bash
+./pl0 myprogram.pl0
+```
 
-# Resources
+And when the compilation is finished we execute the executable produced:
+
+```bash
+./myprogram
+```
+
+# 🔭 Resources
 
 - [LLVM Kaleidoscope](https://llvm.org/docs/tutorial/)
 - [Clang Source Code](https://github.com/llvm/llvm-project/tree/main/clang/)
