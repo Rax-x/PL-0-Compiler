@@ -10,7 +10,7 @@ For more details about this language check out the Wikipedia [article](https://e
 > The focus of this project is not to design a good and fast compiler, but just to learn how use the LLVM to develop compilers.
 > So all the components of this compiler (lexer, parser, error reporting, etc.) are really basic.
 
-## 👩‍💻 Installation
+## 🌱 Installation
 ### 📜 Prerequisites
 
 - `g++` or `clang++` compiler
